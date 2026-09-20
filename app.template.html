@@ -1,0 +1,559 @@
+<meta charset="utf-8">
+<title>Карточки ПДД РК</title>
+<style>
+:root{
+  --ground:#EFF1F4; --panel:#FFFFFF; --sunk:#E2E6EC;
+  --ink:#141A22; --ink-2:#4D5766; --ink-3:#77818F;
+  --line:#CFD6DF; --line-soft:#DFE4EA;
+  --accent:#1B5CB8; --accent-ink:#FFFFFF; --accent-soft:#DDE8FA;
+  --good:#1D7A4D; --good-bg:#DDEFE5;
+  --warn:#8A5B12; --warn-bg:#F5E7CF;
+  --bad:#B23A2C;  --bad-bg:#F6DEDA;
+  --shadow:0 1px 0 rgba(20,26,34,.04), 0 6px 20px -12px rgba(20,26,34,.4);
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --ground:#10141A; --panel:#1A2029; --sunk:#232B36;
+  --ink:#E6EBF2; --ink-2:#A2ADBB; --ink-3:#7A8493;
+  --line:#2C3540; --line-soft:#232B34;
+  --accent:#79ADF5; --accent-ink:#0B1420; --accent-soft:#1A2937;
+  --good:#6EC494; --good-bg:#16291F;
+  --warn:#DCB268; --warn-bg:#31281A;
+  --bad:#E0887A;  --bad-bg:#331E1B;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.8);
+}}
+:root[data-theme="dark"]{
+  --ground:#10141A; --panel:#1A2029; --sunk:#232B36;
+  --ink:#E6EBF2; --ink-2:#A2ADBB; --ink-3:#7A8493;
+  --line:#2C3540; --line-soft:#232B34;
+  --accent:#79ADF5; --accent-ink:#0B1420; --accent-soft:#1A2937;
+  --good:#6EC494; --good-bg:#16291F;
+  --warn:#DCB268; --warn-bg:#31281A;
+  --bad:#E0887A;  --bad-bg:#331E1B;
+  --shadow:0 1px 0 rgba(0,0,0,.3), 0 8px 24px -14px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+     font-size:17px;line-height:1.55;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.app{display:flex;flex-direction:column;min-height:100dvh;max-width:720px;margin:0 auto;
+     padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
+.screen.on{display:flex}
+
+.lbl{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3)}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- home ---------- */
+.home{gap:0;padding:0 16px 24px}
+.masthead{padding:28px 0 18px;display:flex;flex-direction:column;gap:6px}
+.masthead h1{margin:0;font-size:27px;line-height:1.15;font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+.today{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);margin-bottom:18px}
+.today div{flex:1;padding:11px 12px;display:flex;flex-direction:column;gap:3px}
+.today div+div{border-left:1px solid var(--line-soft)}
+.today b{font-size:22px;font-weight:700;letter-spacing:-.02em}
+
+.rowhead{display:flex;align-items:baseline;justify-content:space-between;margin:6px 2px 8px}
+.decks{display:flex;flex-direction:column;gap:8px;list-style:none;margin:0;padding:0}
+.deck{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 14px;
+      background:var(--panel);border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow);
+      transition:transform .12s ease}
+.deck:active{transform:scale(.985)}
+.deck[data-empty="1"]{opacity:.5;box-shadow:none}
+.deck .idx{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);
+           width:20px;flex:none;text-align:center}
+.deck .nm{flex:1;min-width:0;font-weight:600;letter-spacing:-.01em}
+.deck .sub{display:block;font-weight:400;font-size:13px;color:var(--ink-3);margin-top:1px}
+.counts{display:flex;gap:5px;flex:none;font-family:var(--mono);font-size:12px;font-weight:700}
+.counts span{padding:2px 7px;border-radius:20px;min-width:26px;text-align:center}
+.c-due{background:var(--accent-soft);color:var(--accent)}
+.c-new{background:var(--sunk);color:var(--ink-2)}
+.c-zero{color:var(--ink-3);background:none;padding-right:0}
+
+.bigbtn{margin-top:16px;width:100%;padding:15px;border-radius:11px;background:var(--accent);color:var(--accent-ink);
+        font-weight:700;font-size:17px;letter-spacing:-.01em;box-shadow:var(--shadow)}
+.bigbtn:disabled{background:var(--sunk);color:var(--ink-3);box-shadow:none}
+.bigbtn:active:not(:disabled){filter:brightness(1.08)}
+.ghostbtn{margin-top:9px;width:100%;padding:13px;border-radius:11px;background:var(--panel);
+          border:1px solid var(--line);font-weight:600;font-size:16px;color:var(--ink-2)}
+
+.filters{margin-top:22px;padding-top:18px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:12px}
+.fgroup{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fgroup>.lbl{width:100%}
+.chip{padding:6px 12px;border:1px solid var(--line);border-radius:20px;font-size:14px;font-weight:600;
+      background:var(--panel);color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tiny{font-size:13px;color:var(--ink-3);line-height:1.45;margin:0}
+.linkbtn{font-size:14px;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+
+/* ---------- study ---------- */
+.rail{height:3px;background:var(--line-soft);flex:none}
+.rail i{display:block;height:100%;background:var(--accent);width:0;transition:width .25s ease}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 14px 8px;flex:none}
+.bar .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{padding:6px 10px;border-radius:8px;font-size:14px;font-weight:600;color:var(--ink-2)}
+.iconbtn:disabled{opacity:.3}
+
+.cardwrap{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+          display:flex;flex-direction:column;padding:4px 14px 18px}
+.ankicard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 17px 20px;
+          box-shadow:var(--shadow);flex:0 0 auto;margin:auto 0}
+.ankicard .lbl{display:block;margin-bottom:7px}
+.ankicard .q{font-size:21px;line-height:1.4;font-weight:600;letter-spacing:-.015em}
+.ankicard .a{font-size:19px;line-height:1.5}
+.ankicard .a b{color:var(--accent);font-weight:700}
+.ankicard hr#answer{border:0;border-top:1px solid var(--line);margin:15px 0}
+
+.pad{flex:none;padding:0 14px calc(14px + env(safe-area-inset-bottom));background:var(--ground);
+     border-top:1px solid var(--line-soft);padding-top:12px}
+.reveal{width:100%;padding:16px;border-radius:12px;background:var(--accent);color:var(--accent-ink);
+        font-weight:700;font-size:17px;box-shadow:var(--shadow)}
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.g{padding:11px 4px 9px;border-radius:11px;background:var(--panel);border:1px solid var(--line);
+   display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:var(--shadow)}
+.g:active{transform:scale(.96)}
+.g b{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.g small{font-family:var(--mono);font-size:10.5px;color:var(--ink-3)}
+.g1 b{color:var(--bad)} .g2 b{color:var(--warn)} .g4 b{color:var(--good)}
+.g3{background:var(--accent);border-color:var(--accent)}
+.g3 b{color:var(--accent-ink)} .g3 small{color:var(--accent-ink);opacity:.72}
+
+/* ---------- sheet ---------- */
+.sheet{padding:0 16px 32px}
+.sheet h2{margin:24px 0 9px;font-size:12px;font-family:var(--mono);letter-spacing:.16em;
+          text-transform:uppercase;color:var(--ink-3)}
+.rows{background:var(--panel);border:1px solid var(--line);border-radius:11px;overflow:hidden;box-shadow:var(--shadow)}
+.r{display:flex;gap:14px;padding:10px 14px;border-top:1px solid var(--line-soft);align-items:baseline}
+.r:first-child{border-top:0}
+.r span{flex:1;font-size:15.5px;line-height:1.35}
+.r b{flex:none;font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);white-space:nowrap}
+.warnbox{margin-top:20px;padding:13px 14px;border:1px solid var(--line);border-left:3px solid var(--warn);
+         background:var(--warn-bg);border-radius:0 10px 10px 0;font-size:14.5px;line-height:1.5;color:var(--ink)}
+.warnbox b{color:inherit}
+
+/* ---------- done ---------- */
+.done{align-items:center;justify-content:center;text-align:center;gap:8px;padding:40px 24px}
+.done h2{margin:0;font-size:24px;letter-spacing:-.02em}
+.done p{margin:0;color:var(--ink-2);max-width:34ch}
+</style>
+
+<div class="app">
+  <!-- ============ HOME ============ -->
+  <section id="s-home" class="screen on home">
+    <header class="masthead">
+      <span class="lbl">ПДД Казахстана · редакция 2026</span>
+      <h1>Карточки ПДД РК</h1>
+    </header>
+
+    <div class="today">
+      <div><span class="lbl">К повтору</span><b class="num" id="t-due">0</b></div>
+      <div><span class="lbl">Новых</span><b class="num" id="t-new">0</b></div>
+      <div><span class="lbl">Сегодня</span><b class="num" id="t-done">0</b></div>
+      <div><span class="lbl">Выучено</span><b class="num" id="t-mature">0</b></div>
+    </div>
+
+    <button class="bigbtn" id="study-all">Учить всё</button>
+    <button class="ghostbtn" id="to-sheet">Шпаргалка по цифрам</button>
+
+    <div class="rowhead"><span class="lbl">Темы</span><span class="lbl num" id="t-total"></span></div>
+    <ul class="decks" id="decklist"></ul>
+
+    <div class="filters">
+      <div class="fgroup">
+        <span class="lbl">Отбор карточек</span>
+        <button class="chip" id="f-nums" aria-pressed="false">Только карточки с цифрами</button>
+      </div>
+      <div class="fgroup">
+        <span class="lbl">Новых карточек в день</span>
+        <button class="chip" data-lim="10">10</button>
+        <button class="chip" data-lim="20">20</button>
+        <button class="chip" data-lim="40">40</button>
+        <button class="chip" data-lim="0">Без лимита</button>
+      </div>
+      <p class="tiny" id="progline"></p>
+      <p class="tiny">Экзамен: 40 вопросов за 40 минут, нужно 32 правильных.</p>
+      <p><button class="linkbtn" id="reset">Сбросить весь прогресс</button></p>
+    </div>
+  </section>
+
+  <!-- ============ STUDY ============ -->
+  <section id="s-study" class="screen">
+    <div class="rail"><i id="rail"></i></div>
+    <div class="bar">
+      <button class="iconbtn" id="back">‹ Темы</button>
+      <span class="nm lbl" id="cur-deck"></span>
+      <button class="iconbtn" id="undo" disabled>Отменить</button>
+    </div>
+    <div class="cardwrap" id="cardwrap"><div class="ankicard" id="card"></div></div>
+    <div class="pad">
+      <button class="reveal" id="reveal">Показать ответ</button>
+      <div class="grades" id="grades" hidden>
+        <button class="g g1" data-g="1"><b>Снова</b><small id="i1"></small></button>
+        <button class="g g2" data-g="2"><b>Трудно</b><small id="i2"></small></button>
+        <button class="g g3" data-g="3"><b>Хорошо</b><small id="i3"></small></button>
+        <button class="g g4" data-g="4"><b>Легко</b><small id="i4"></small></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SHEET ============ -->
+  <section id="s-sheet" class="screen sheet">
+    <div class="bar" style="padding-left:0">
+      <button class="iconbtn" id="sheet-back" style="padding-left:0">‹ Темы</button>
+      <span class="nm lbl">Шпаргалка</span>
+    </div>
+
+    <h2>Скорость, км/ч</h2>
+    <div class="rows">
+      <div class="r"><span>Населённый пункт, легковой</span><b>60</b></div>
+      <div class="r"><span>Населённый пункт, автобус и грузовой</span><b>50</b></div>
+      <div class="r"><span>Жилая зона и двор</span><b>20</b></div>
+      <div class="r"><span>Автомагистраль, легковой и мотоцикл</span><b>140</b></div>
+      <div class="r"><span>Автомагистраль, грузовой до 3,5 т</span><b>110</b></div>
+      <div class="r"><span>Дорога для автомобилей (знак 5.3), легковой</span><b>110</b></div>
+      <div class="r"><span>Прочие дороги вне НП, легковой</span><b>100</b></div>
+      <div class="r"><span>Прочие дороги вне НП, грузовой свыше 3,5 т</span><b>90</b></div>
+      <div class="r"><span>Прочие дороги вне НП, автобус и с прицепом</span><b>70</b></div>
+      <div class="r"><span>Перевозка людей в кузове</span><b>60</b></div>
+      <div class="r"><span>Буксировка</span><b>50</b></div>
+      <div class="r"><span>Минимум для въезда на автомагистраль</span><b>40</b></div>
+      <div class="r"><span>Электросамокат по тротуару</span><b>6</b></div>
+    </div>
+
+    <h2>Расстояния, метры</h2>
+    <div class="rows">
+      <div class="r"><span>Знак аварийной остановки в НП</span><b>15</b></div>
+      <div class="r"><span>Знак аварийной остановки вне НП</span><b>30</b></div>
+      <div class="r"><span>Остановка перед пешеходным переходом</span><b>5</b></div>
+      <div class="r"><span>Остановка от края пересекаемой проезжей части</span><b>30</b></div>
+      <div class="r"><span>Остановка у остановочной площадки</span><b>15</b></div>
+      <div class="r"><span>Стоянка от железнодорожного переезда</span><b>50</b></div>
+      <div class="r"><span>Обгон перед переездом запрещён</span><b>100</b></div>
+      <div class="r"><span>Переключить дальний свет на ближний</span><b>150</b></div>
+      <div class="r"><span>Разворот запрещён при видимости менее</span><b>100</b></div>
+      <div class="r"><span>Гибкая сцепка</span><b>4–6</b></div>
+      <div class="r"><span>Жёсткая сцепка, не более</span><b>4</b></div>
+      <div class="r"><span>Предупреждающие знаки вне НП</span><b>150–300</b></div>
+      <div class="r"><span>Предупреждающие знаки в НП</span><b>50–100</b></div>
+      <div class="r"><span>Люди вдоль путей при остановке на переезде</span><b>1000</b></div>
+    </div>
+
+    <h2>Возраст и сроки</h2>
+    <div class="rows">
+      <div class="r"><span>Категория B</span><b>18 лет</b></div>
+      <div class="r"><span>Подкатегория A1</span><b>16 лет</b></div>
+      <div class="r"><span>Детское кресло обязательно до</span><b>12 лет</b></div>
+      <div class="r"><span>Пассажир на заднем сиденье мотоцикла</span><b>с 16</b></div>
+      <div class="r"><span>Велосипед по проезжей части</span><b>с 14</b></div>
+      <div class="r"><span>Электросамокат по проезжей части</span><b>с 18</b></div>
+      <div class="r"><span>Срок водительского удостоверения</span><b>10 лет</b></div>
+      <div class="r"><span>Результат теории действует</span><b>2 года</b></div>
+    </div>
+
+    <h2>Экзамен</h2>
+    <div class="rows">
+      <div class="r"><span>Вопросов в тесте</span><b>40</b></div>
+      <div class="r"><span>Минут на тест</span><b>40</b></div>
+      <div class="r"><span>Нужно правильных ответов</span><b>32</b></div>
+      <div class="r"><span>Допустимо ошибок</span><b>8</b></div>
+      <div class="r"><span>Штрафных баллов на автодроме, не более</span><b>99</b></div>
+      <div class="r"><span>Пересдача после второй неудачи</span><b>1 месяц</b></div>
+      <div class="r"><span>Госпошлина</span><b>1,25 МРП</b></div>
+    </div>
+
+    <div class="warnbox">
+      Три цифры, на которых спотыкаются те, кто готовился по российским билетам:
+      остановка запрещена <b>ближе 30 м</b> от края пересекаемой проезжей части (в РФ — 5 м),
+      у остановочной площадки — <b>15 м</b>, а на автомагистрали легковым разрешено <b>140 км/ч</b>.
+    </div>
+  </section>
+
+  <!-- ============ DONE ============ -->
+  <section id="s-done" class="screen done">
+    <span class="lbl">Очередь пуста</span>
+    <h2 id="done-h">На сегодня всё</h2>
+    <p id="done-p"></p>
+    <button class="bigbtn" id="done-back" style="max-width:280px">К темам</button>
+  </section>
+</div>
+
+<script type="application/json" id="cards-data">__CARDS_JSON__</script>
+<script>
+(function(){
+"use strict";
+var CARDS = JSON.parse(document.getElementById('cards-data').textContent);
+var KEY = 'pdd-kz-v1';
+var DAY = 86400000, MIN = 60000;
+
+/* ---------- state ---------- */
+var st = load();
+function load(){
+  var d = {sched:{}, log:{}, nums:false, limit:20};
+  try{ var raw = localStorage.getItem(KEY); if(raw) d = Object.assign(d, JSON.parse(raw)); }catch(e){}
+  return d;
+}
+var saveT = null;
+function save(){ clearTimeout(saveT); saveT = setTimeout(function(){
+  try{ localStorage.setItem(KEY, JSON.stringify(st)); }catch(e){}
+}, 250); }
+
+function today(){ var d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
+function sched(id){ return st.sched[id]; }
+
+/* ---------- filtering ---------- */
+function passes(c){
+  if(st.nums && c.tags.indexOf('цифры') < 0) return false;
+  return true;
+}
+
+/* ---------- queue ---------- */
+var DECKS = [];
+(function(){ var seen={};
+  CARDS.forEach(function(c){ if(!seen[c.deck]){ seen[c.deck]=1; DECKS.push(c.deck); } });
+  DECKS.sort(function(a,b){ return parseInt(a,10) - parseInt(b,10); });
+})();
+
+var AHEAD = 20*MIN;   // как в Anki: карточку в обучении можно взять чуть раньше срока
+function bucket(c, now){
+  var s = sched(c.id);
+  if(!s) return 'new';
+  if(s.ivl < 1) return s.due <= now + AHEAD ? 'learn' : 'later';
+  return s.due <= now ? 'due' : 'later';
+}
+function newSeenToday(){ var k = today(); return (st.log[k] && st.log[k].newSeen) || 0; }
+function studiedToday(){ var k = today(); return (st.log[k] && st.log[k].done) || 0; }
+
+function buildQueue(deck){
+  var now = Date.now();
+  var pool = CARDS.filter(function(c){ return passes(c) && (!deck || c.deck === deck); });
+  var learn=[], due=[], fresh=[];
+  pool.forEach(function(c){
+    var b = bucket(c, now);
+    if(b==='learn') learn.push(c); else if(b==='due') due.push(c); else if(b==='new') fresh.push(c);
+  });
+  shuffle(due); shuffle(fresh);
+  var room = st.limit === 0 ? fresh.length : Math.max(0, st.limit - newSeenToday());
+  fresh = fresh.slice(0, room);
+  var q = learn.concat(due);
+  if(fresh.length){
+    var step = Math.max(1, Math.floor((q.length||1) / fresh.length));
+    fresh.forEach(function(c,i){ var at = Math.min(q.length, (i+1)*step + i); q.splice(at, 0, c); });
+  }
+  return q;
+}
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } }
+
+function counts(deck){
+  var now = Date.now(), r = {due:0, nw:0, mature:0, total:0};
+  CARDS.forEach(function(c){
+    if(deck && c.deck !== deck) return;
+    if(!passes(c)) return;
+    r.total++;
+    var b = bucket(c, now);
+    if(b==='due'||b==='learn') r.due++;
+    else if(b==='new') r.nw++;
+    var s = sched(c.id); if(s && s.ivl >= 21) r.mature++;
+  });
+  return r;
+}
+
+/* ---------- SM-2 lite ---------- */
+var STEPS = [MIN, 10*MIN];
+function preview(c, g){ return fmt(next(sched(c.id), g, true).ivl); }
+function next(s, g, dry){
+  s = s ? {ef:s.ef, ivl:s.ivl, due:s.due, reps:s.reps, lapses:s.lapses, step:s.step}
+        : {ef:2.5, ivl:0, due:0, reps:0, lapses:0, step:0};
+  var learning = s.reps === 0 || s.ivl < 1;
+  if(g === 1){
+    s.ef = Math.max(1.3, s.ef - 0.2);
+    if(!learning) s.lapses++;
+    s.step = 0; s.ivl = STEPS[0]/DAY;
+  } else if(learning){
+    if(g === 4){ s.ivl = 3; s.step = STEPS.length; }
+    else if(g === 2){
+      var i = Math.min(s.step, STEPS.length-1);
+      var nx = i+1 < STEPS.length ? STEPS[i+1] : STEPS[i]*1.5;
+      s.ivl = ((STEPS[i] + nx)/2)/DAY;
+    }
+    else {
+      s.step++;
+      s.ivl = s.step >= STEPS.length ? 1 : STEPS[s.step]/DAY;
+    }
+  } else {
+    if(g === 2){ s.ef = Math.max(1.3, s.ef - 0.15); s.ivl = Math.max(1, s.ivl * 1.2); }
+    else if(g === 3){ s.ivl = Math.max(1, s.ivl * s.ef); }
+    else { s.ef = Math.min(3.2, s.ef + 0.15); s.ivl = Math.max(1, s.ivl * s.ef * 1.3); }
+  }
+  s.ivl = Math.min(s.ivl, 365);
+  if(!dry) s.reps++;
+  s.due = Date.now() + s.ivl * DAY;
+  return s;
+}
+function fmt(ivl){
+  var m = ivl * 1440;
+  if(m < 60) return Math.round(m) + ' мин';
+  if(ivl < 1) return Math.round(m/60) + ' ч';
+  if(ivl < 30) return Math.round(ivl) + ' дн';
+  if(ivl < 365) return (Math.round(ivl/30*10)/10) + ' мес';
+  return '1 год';
+}
+
+/* ---------- screens ---------- */
+var $ = function(id){ return document.getElementById(id); };
+function show(name){
+  ['home','study','sheet','done'].forEach(function(n){ $('s-'+n).classList.toggle('on', n === name); });
+  window.scrollTo(0,0);
+}
+
+function renderHome(){
+  var all = counts(null);
+  $('t-due').textContent = all.due;
+  $('t-new').textContent = st.limit === 0 ? all.nw : Math.min(all.nw, Math.max(0, st.limit - newSeenToday()));
+  $('t-done').textContent = studiedToday();
+  $('t-mature').textContent = all.mature;
+  $('t-total').textContent = all.total + ' карточек';
+
+  var ul = $('decklist'); ul.innerHTML = '';
+  DECKS.forEach(function(d){
+    var c = counts(d);
+    if(!c.total) return;
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.className = 'deck';
+    var avail = c.due + (st.limit === 0 ? c.nw : Math.min(c.nw, Math.max(0, st.limit - newSeenToday())));
+    if(!avail) b.dataset.empty = '1';
+    var parts = d.split(' · ');
+    b.innerHTML = '<span class="idx">' + esc(parts[0]) + '</span>' +
+      '<span class="nm">' + esc(parts[1] || d) + '<span class="sub">' + c.total + ' карточек</span></span>' +
+      '<span class="counts">' +
+        (c.due ? '<span class="c-due num">' + c.due + '</span>' : '') +
+        (c.nw ? '<span class="c-new num">' + c.nw + '</span>' : '') +
+        (!c.due && !c.nw ? '<span class="c-zero">готово</span>' : '') +
+      '</span>';
+    b.onclick = function(){ start(d); };
+    li.appendChild(b); ul.appendChild(li);
+  });
+
+  $('study-all').disabled = buildQueue(null).length === 0;
+  var seen = 0; CARDS.forEach(function(c){ if(sched(c.id)) seen++; });
+  $('progline').textContent = 'Начато ' + seen + ' из ' + CARDS.length +
+    ' карточек · интервалы и прогресс хранятся на этом устройстве.';
+
+  $('f-nums').setAttribute('aria-pressed', String(!!st.nums));
+  document.querySelectorAll('[data-lim]').forEach(function(el){
+    el.setAttribute('aria-pressed', String(st.limit === +el.dataset.lim));
+  });
+}
+function esc(s){ return String(s).replace(/[&<>]/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[m]; }); }
+
+/* ---------- study loop ---------- */
+var queue = [], cur = null, shown = false, total = 0, prev = null, curDeck = null;
+
+function start(deck){
+  curDeck = deck;
+  queue = buildQueue(deck);
+  total = queue.length;
+  prev = null; $('undo').disabled = true;
+  $('cur-deck').textContent = deck ? deck.split(' · ')[1] : 'Все темы';
+  if(!queue.length){ finish(); return; }
+  show('study'); nextCard();
+}
+function nextCard(){
+  if(!queue.length){ finish(); return; }
+  cur = queue.shift(); shown = false;
+  $('rail').style.width = (100 * (total - queue.length - 1) / total) + '%';
+  $('card').innerHTML = cur.front;
+  $('grades').hidden = true; $('reveal').hidden = false;
+  $('cardwrap').scrollTop = 0;
+}
+function revealCard(){
+  if(shown) return;
+  shown = true;
+  $('card').innerHTML = cur.front + '<hr id="answer">' + cur.back;
+  $('reveal').hidden = true; $('grades').hidden = false;
+  for(var g = 1; g <= 4; g++) $('i'+g).textContent = preview(cur, g);
+}
+function grade(g){
+  if(!shown) return;
+  var was = st.sched[cur.id] ? JSON.parse(JSON.stringify(st.sched[cur.id])) : null;
+  var isNew = !was;
+  prev = {card:cur, was:was, isNew:isNew, requeued:false};
+
+  st.sched[cur.id] = next(was, g, false);
+  var k = today();
+  st.log[k] = st.log[k] || {done:0, newSeen:0};
+  st.log[k].done++;
+  if(isNew) st.log[k].newSeen++;
+  save();
+
+  if(st.sched[cur.id].ivl < 1){           // ещё в обучении → возвращаем в очередь
+    var at = Math.min(queue.length, 3 + Math.floor(Math.random()*3));
+    queue.splice(at, 0, cur);
+    prev.requeued = true;
+    total++;
+  }
+  $('undo').disabled = false;
+  nextCard();
+}
+function undo(){
+  if(!prev) return;
+  if(prev.was) st.sched[prev.card.id] = prev.was; else delete st.sched[prev.card.id];
+  var k = today();
+  if(st.log[k]){ st.log[k].done = Math.max(0, st.log[k].done - 1);
+                 if(prev.isNew) st.log[k].newSeen = Math.max(0, st.log[k].newSeen - 1); }
+  if(prev.requeued){
+    var i = queue.indexOf(prev.card); if(i >= 0) queue.splice(i,1);
+    total--;
+  }
+  if(cur) queue.unshift(cur);
+  queue.unshift(prev.card);
+  prev = null; $('undo').disabled = true;
+  save();
+  if($('s-study').classList.contains('on')) nextCard(); else { show('study'); nextCard(); }
+}
+function finish(){
+  var rest = counts(null);
+  $('done-h').textContent = curDeck ? 'Тема пройдена' : 'На сегодня всё';
+  $('done-p').textContent = studiedToday() + ' повторений сегодня. ' +
+    (rest.due ? 'Ещё ' + rest.due + ' карточек ждут в других темах.'
+              : (rest.nw ? 'Новые появятся завтра — или снимите дневной лимит.' : 'Все карточки в интервалах.'));
+  show('done');
+  renderHome();
+}
+
+/* ---------- wiring ---------- */
+$('study-all').onclick = function(){ start(null); };
+$('to-sheet').onclick = function(){ show('sheet'); };
+$('sheet-back').onclick = function(){ show('home'); };
+$('back').onclick = function(){ renderHome(); show('home'); };
+$('done-back').onclick = function(){ renderHome(); show('home'); };
+$('reveal').onclick = revealCard;
+$('cardwrap').onclick = function(){ if(!shown) revealCard(); };
+$('undo').onclick = undo;
+document.querySelectorAll('.g').forEach(function(b){ b.onclick = function(){ grade(+b.dataset.g); }; });
+
+$('f-nums').onclick = function(){ st.nums = !st.nums; save(); renderHome(); };
+document.querySelectorAll('[data-lim]').forEach(function(el){
+  el.onclick = function(){ st.limit = +el.dataset.lim; save(); renderHome(); };
+});
+$('reset').onclick = function(){
+  if(!confirm('Удалить все интервалы и статистику? Карточки останутся.')) return;
+  st.sched = {}; st.log = {}; save(); renderHome();
+};
+
+document.addEventListener('keydown', function(e){
+  if(!$('s-study').classList.contains('on')) return;
+  if(e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); shown ? grade(3) : revealCard(); }
+  else if(shown && e.key >= '1' && e.key <= '4') grade(+e.key);
+  else if(e.key === 'z') undo();
+});
+
+renderHome();
+})();
+</script>

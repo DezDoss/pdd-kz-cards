@@ -105,6 +105,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .ankicard{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 17px 20px;
           box-shadow:var(--shadow);flex:0 0 auto;margin:auto 0}
 .ankicard .lbl{display:block;margin-bottom:7px}
+.hot{display:inline-block;margin-bottom:7px;padding:2px 8px;border-radius:20px;
+     background:var(--warn-bg);color:var(--warn);font-family:var(--mono);font-size:10px;
+     font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 .ankicard .q{font-size:21px;line-height:1.4;font-weight:600;letter-spacing:-.015em}
 .ankicard .a{font-size:19px;line-height:1.5}
 .ankicard .a b{color:var(--accent);font-weight:700}
@@ -167,7 +170,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
     <div class="filters">
       <div class="fgroup">
         <span class="lbl">Отбор карточек</span>
-        <button class="chip" id="f-nums" aria-pressed="false">Только карточки с цифрами</button>
+        <button class="chip" id="f-prio" aria-pressed="false">Только частые</button>
+        <button class="chip" id="f-nums" aria-pressed="false">Только с цифрами</button>
       </div>
       <div class="fgroup">
         <span class="lbl">Новых карточек в день</span>
@@ -177,6 +181,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
         <button class="chip" data-lim="0">Без лимита</button>
       </div>
       <p class="tiny" id="progline"></p>
+      <p class="tiny">Новые карточки идут по важности: сначала частые — приоритет,
+         знаки, светофор и ключевые цифры, потом остальное.</p>
       <p class="tiny">Экзамен: 40 вопросов за 40 минут, нужно 32 правильных.</p>
       <p><button class="linkbtn" id="reset">Сбросить весь прогресс</button></p>
     </div>
@@ -294,7 +300,7 @@ var DAY = 86400000, MIN = 60000;
 /* ---------- state ---------- */
 var st = load();
 function load(){
-  var d = {sched:{}, log:{}, nums:false, limit:20};
+  var d = {sched:{}, log:{}, nums:false, prio:false, limit:20};
   try{ var raw = localStorage.getItem(KEY); if(raw) d = Object.assign(d, JSON.parse(raw)); }catch(e){}
   return d;
 }
@@ -307,7 +313,11 @@ function today(){ var d = new Date(); d.setHours(0,0,0,0); return d.getTime(); }
 function sched(id){ return st.sched[id]; }
 
 /* ---------- filtering ---------- */
+function prioOf(c){
+  return c.tags.indexOf('приоритет1') >= 0 ? 1 : c.tags.indexOf('приоритет2') >= 0 ? 2 : 3;
+}
 function passes(c){
+  if(st.prio && prioOf(c) !== 1) return false;
   if(st.nums && c.tags.indexOf('цифры') < 0) return false;
   return true;
 }
@@ -337,7 +347,11 @@ function buildQueue(deck){
     var b = bucket(c, now);
     if(b==='learn') learn.push(c); else if(b==='due') due.push(c); else if(b==='new') fresh.push(c);
   });
-  shuffle(due); shuffle(fresh);
+  shuffle(due);
+  var byPrio = [[], [], [], []];
+  fresh.forEach(function(c){ byPrio[prioOf(c)].push(c); });
+  byPrio.forEach(shuffle);
+  fresh = byPrio[1].concat(byPrio[2], byPrio[3]);
   var room = st.limit === 0 ? fresh.length : Math.max(0, st.limit - newSeenToday());
   fresh = fresh.slice(0, room);
   var q = learn.concat(due);
@@ -442,9 +456,12 @@ function renderHome(){
 
   $('study-all').disabled = buildQueue(null).length === 0;
   var seen = 0; CARDS.forEach(function(c){ if(sched(c.id)) seen++; });
-  $('progline').textContent = 'Начато ' + seen + ' из ' + CARDS.length +
-    ' карточек · интервалы и прогресс хранятся на этом устройстве.';
+  var core = CARDS.filter(function(c){ return prioOf(c) === 1; });
+  var coreDone = core.filter(function(c){ var s = sched(c.id); return s && s.ivl >= 1; }).length;
+  $('progline').textContent = 'Начато ' + seen + ' из ' + CARDS.length + ' карточек · частых ' +
+    coreDone + ' из ' + core.length + ' · прогресс хранится на этом устройстве.';
 
+  $('f-prio').setAttribute('aria-pressed', String(!!st.prio));
   $('f-nums').setAttribute('aria-pressed', String(!!st.nums));
   document.querySelectorAll('[data-lim]').forEach(function(el){
     el.setAttribute('aria-pressed', String(st.limit === +el.dataset.lim));
@@ -464,18 +481,19 @@ function start(deck){
   if(!queue.length){ finish(); return; }
   show('study'); nextCard();
 }
+function face(c){ return (prioOf(c) === 1 ? '<span class="hot">часто</span>' : '') + c.front; }
 function nextCard(){
   if(!queue.length){ finish(); return; }
   cur = queue.shift(); shown = false;
   $('rail').style.width = (100 * (total - queue.length - 1) / total) + '%';
-  $('card').innerHTML = cur.front;
+  $('card').innerHTML = face(cur);
   $('grades').hidden = true; $('reveal').hidden = false;
   $('cardwrap').scrollTop = 0;
 }
 function revealCard(){
   if(shown) return;
   shown = true;
-  $('card').innerHTML = cur.front + '<hr id="answer">' + cur.back;
+  $('card').innerHTML = face(cur) + '<hr id="answer">' + cur.back;
   $('reveal').hidden = true; $('grades').hidden = false;
   for(var g = 1; g <= 4; g++) $('i'+g).textContent = preview(cur, g);
 }
@@ -538,6 +556,7 @@ $('cardwrap').onclick = function(){ if(!shown) revealCard(); };
 $('undo').onclick = undo;
 document.querySelectorAll('.g').forEach(function(b){ b.onclick = function(){ grade(+b.dataset.g); }; });
 
+$('f-prio').onclick = function(){ st.prio = !st.prio; save(); renderHome(); };
 $('f-nums').onclick = function(){ st.nums = !st.nums; save(); renderHome(); };
 document.querySelectorAll('[data-lim]').forEach(function(el){
   el.onclick = function(){ st.limit = +el.dataset.lim; save(); renderHome(); };

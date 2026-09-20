@@ -24,6 +24,40 @@ TOPIC_DECK = {
     "exam": "Экзамен и документы",
 }
 
+
+# ---------------------------------------------------------------- приоритет
+# 1 — ядро: темы и формулировки, которые в тесте встречаются чаще всего
+#     и на которых чаще всего валятся (приоритет, знаки, светофор, ключевые цифры)
+# 2 — спрашивают, но реже
+# 3 — в сам тест не входит: процедура экзамена, документы, госпошлина
+CORE_IDS = {
+    # приоритет и перекрёстки — полностью
+    50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+    # светофор и регулировщик (кроме реверсивного и бело-лунного)
+    60, 61, 62, 63, 64, 67, 68, 69, 70, 71, 72,
+    # скорость — базовые пределы
+    1, 2, 3, 4, 8, 12,
+    # остановка и стоянка — цифры расстояний
+    41, 42, 43, 45,
+    # обгон — места запрета
+    34, 35, 36,
+    # разметка — линии, которые встречаются в каждом билете
+    127, 129, 131, 132,
+    # маневрирование — запреты разворота и заднего хода
+    30, 31,
+    # знаки: требования 2.4 / 2.5 и пара 3.27–3.28
+    116, 117, 120,
+    # обязанности: документы, ремни, опьянение
+    15, 16, 19,
+    # аварийная сигнализация: 15 и 30 метров
+    23, 24,
+}
+
+def prio_of(topic, card_id):
+    if topic == "exam":
+        return 3
+    return 1 if card_id in CORE_IDS else 2
+
 def front(label, q, art=""):
     return '<span class="lbl">%s</span><div class="q">%s</div>%s' % (html.escape(label), q, art)
 
@@ -36,7 +70,7 @@ cards = []
 src = json.load(open(os.path.join(HERE, "anki", "cards.raw.json"), encoding="utf-8"))
 for c in src["cards"]:
     name = TOPIC_DECK[c["topic"]]
-    tags = ["тема::" + c["topic"]]
+    tags = ["тема::" + c["topic"], "приоритет%d" % prio_of(c["topic"], c["id"])]
     if re.search(r"\d", re.sub(r"<[^>]+>", "", c["a"])):
         tags.append("цифры")
     cards.append({"id": "pdd-%03d" % c["id"], "deck": DECK[name],
@@ -102,7 +136,7 @@ for i, (num, name, rule) in enumerate(SIGN_CARDS, 1):
         "deck": DECK["Знаки по картинке"],
         "front": front("Знак " + num, "Что означает этот знак?", V.SIGNS[num]),
         "back": back("<b>%s «%s»</b><br>%s" % (num, name, rule)),
-        "tags": ["тема::signs", "картинка"],
+        "tags": ["тема::signs", "приоритет1", "картинка"],
     })
 
 # ---------------------------------------------------------------- схемы перекрёстков
@@ -171,7 +205,7 @@ for i, (q, art, a) in enumerate(SCENES, 1):
         "deck": DECK["Схемы перекрёстков"],
         "front": front("Схема", q, art),
         "back": back(a),
-        "tags": ["тема::priority", "картинка", "схема"],
+        "tags": ["тема::priority", "приоритет1", "картинка", "схема"],
     })
 
 # ---------------------------------------------------------------- вывод
@@ -179,5 +213,8 @@ order = {d: i for i, d in enumerate(DECK.values())}
 cards.sort(key=lambda c: (order[c["deck"]], c["id"]))
 json.dump(cards, open(os.path.join(HERE, "cards.json"), "w", encoding="utf-8"),
           ensure_ascii=False, indent=1)
+from collections import Counter
+pr = Counter(t for c in cards for t in c["tags"] if t.startswith("приоритет"))
 print(len(cards), "карточек ·", len({c["deck"] for c in cards}), "колод ·",
       sum(1 for c in cards if "картинка" in c["tags"]), "с графикой")
+print("  приоритет 1:", pr["приоритет1"], "· 2:", pr["приоритет2"], "· 3:", pr["приоритет3"])
